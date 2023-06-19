@@ -75,14 +75,8 @@ def write_to_s3(labels, meshes, root_dir, bucket, s3_prefix):
 
 
 def to_s3(directory_path, bucket, s3_prefix):
-    # Create session
-    session = boto3.Session(
-        aws_access_key_id="AKIAWZ4O6ZMIBZOKJX6X",
-        aws_secret_access_key="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",
-    )
+    session = boto3.Session()
     s3_client = session.client("s3")
-
-    # Upload files
     for root, dirs, files in os.walk(directory_path):
         for file_name in files:
             local_path = os.path.join(root, file_name)
