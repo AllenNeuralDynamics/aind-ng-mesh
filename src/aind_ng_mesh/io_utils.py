@@ -53,9 +53,27 @@ def read_block(path):
         return zarr.open(zarr.N5FSStore(path), "r").volume[:]
 
 
-def write_to_s3(labels, meshes, root_dir, bucket, s3_prefix):
+def write_to_s3(labels, meshes, root_dir, bucket, s3_prefix, access_id=None, access_key=None):
     """
     Writes to "labels" and "meshes" to an s3 bucket.
+
+    Parameters
+    ----------
+    labels : numpy.array
+        Segmentation.
+    meshes : dict
+        Dictionary of meshes where the keys are object ids and values are meshes.
+    root_dir : str
+        Directory where files will be written to inorder to write to s3. This
+        directory is deleted after the files are uploaded.
+    bucket : str
+        Name of s3 bucket.
+    s3_prefix : str
+        Path where data will be stored in "bucket".
+    
+    Returns
+    -------
+    None
 
     """
     # Create temp directory for uploading
@@ -70,13 +88,26 @@ def write_to_s3(labels, meshes, root_dir, bucket, s3_prefix):
 
     # Write to s3
     print("Writing to s3 bucket...")
-    to_s3(upload_dir, bucket, s3_prefix)
+    to_s3(upload_dir, bucket, s3_prefix, access_id=access_id, access_key=access_key)
     shutil.rmtree(upload_dir)
 
 
-def to_s3(directory_path, bucket, s3_prefix):
-    session = boto3.Session()
+def to_s3(directory_path, bucket, s3_prefix, access_id=None, secret_access_key=None):
+    """
+    Uploads a directory to an s3 bucket.
+
+    """
+    # Create session
+    if access_id is not None
+        session = boto3.Session(
+            aws_access_key_id=access_id,
+            aws_secret_access_key=secret_access_key,
+        )
+    else:
+        session = boto3.Session()
     s3_client = session.client("s3")
+
+    # Upload files
     for root, dirs, files in os.walk(directory_path):
         for file_name in files:
             local_path = os.path.join(root, file_name)
