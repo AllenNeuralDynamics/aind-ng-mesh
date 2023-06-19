@@ -9,6 +9,7 @@ import aind_ng_mesh.meshing as meshing
 import boto3
 import json
 import os
+import shutil
 import tensorstore as ts
 from tifffile import imread
 import zarr
@@ -70,7 +71,7 @@ def write_to_s3(labels, meshes, root_dir, bucket, s3_prefix):
     # Write to s3
     print("Writing to s3 bucket...")
     to_s3(upload_dir, bucket, s3_prefix)
-    os.rmdir(upload_dir)
+    shutil.rmtree(upload_dir)
 
 
 def to_s3(directory_path, bucket, s3_prefix):
