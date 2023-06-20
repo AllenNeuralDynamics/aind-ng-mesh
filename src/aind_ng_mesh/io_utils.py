@@ -88,7 +88,7 @@ def write_to_s3(labels, meshes, root_dir, bucket, s3_prefix, access_id=None, acc
 
     # Write to s3
     print("Writing to s3 bucket...")
-    to_s3(upload_dir, bucket, s3_prefix, access_id=access_id, access_key=access_key)
+    to_s3(upload_dir, bucket, s3_prefix, access_id=access_id, secret_access_key=access_key)
     shutil.rmtree(upload_dir)
 
 
@@ -98,13 +98,7 @@ def to_s3(directory_path, bucket, s3_prefix, access_id=None, secret_access_key=N
 
     """
     # Create session
-    if access_id is not None
-        session = boto3.Session(
-            aws_access_key_id=access_id,
-            aws_secret_access_key=secret_access_key,
-        )
-    else:
-        session = boto3.Session()
+    session = boto3.Session()
     s3_client = session.client("s3")
 
     # Upload files
