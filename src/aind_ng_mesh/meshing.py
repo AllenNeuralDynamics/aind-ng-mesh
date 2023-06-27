@@ -56,6 +56,7 @@ def save_mesh(meshes, mesh_dir):
         write_mesh_filenames(mesh_dir, obj_id)
         with open(os.path.join(mesh_dir, filename), "wb") as f:
             f.write(meshes[obj_id].to_precomputed())
+    return meshes.keys()
 
 
 def write_mesh_info(mesh_dir):

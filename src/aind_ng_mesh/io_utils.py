@@ -53,7 +53,15 @@ def read_block(path):
         return zarr.open(zarr.N5FSStore(path), "r").volume[:]
 
 
-def write_to_s3(labels, meshes, root_dir, bucket, s3_prefix, access_id=None, access_key=None):
+def write_to_s3(
+    labels,
+    meshes,
+    root_dir,
+    bucket,
+    s3_prefix,
+    access_id=None,
+    access_key=None,
+):
     """
     Writes to "labels" and "meshes" to an s3 bucket.
 
@@ -70,7 +78,7 @@ def write_to_s3(labels, meshes, root_dir, bucket, s3_prefix, access_id=None, acc
         Name of s3 bucket.
     s3_prefix : str
         Path where data will be stored in "bucket".
-    
+
     Returns
     -------
     None
@@ -84,15 +92,24 @@ def write_to_s3(labels, meshes, root_dir, bucket, s3_prefix, access_id=None, acc
     # Store labels and meshes
     print("Converting to precomputed format...")
     to_precomputed(upload_dir, labels)
-    meshing.save_mesh(meshes, mesh_dir)
+    obj_ids = meshing.save_mesh(meshes, mesh_dir)
+    write_segment_properties(upload_dir, obj_ids)
 
     # Write to s3
     print("Writing to s3 bucket...")
-    to_s3(upload_dir, bucket, s3_prefix, access_id=access_id, secret_access_key=access_key)
-    shutil.rmtree(upload_dir)
+    to_s3(
+        upload_dir,
+        bucket,
+        s3_prefix,
+        access_id=access_id,
+        secret_access_key=access_key,
+    )
+    # shutil.rmtree(upload_dir)
 
 
-def to_s3(directory_path, bucket, s3_prefix, access_id=None, secret_access_key=None):
+def to_s3(
+    directory_path, bucket, s3_prefix, access_id=None, secret_access_key=None
+):
     """
     Uploads a directory to an s3 bucket.
 
@@ -166,7 +183,27 @@ def edit_info(precomputed_dir):
     info = read_json(path)
     info["type"] = "segmentation"
     info["mesh"] = "mesh"
+    info["segment_properties"] = "segment_properties"
     write_json(path, info)
+
+
+def write_segment_properties(root_dir, seg_ids):
+    """ """
+    info = {
+        "@type": "neuroglancer_segment_properties",
+        "inline": {
+            "ids": list(map(str, seg_ids)),
+            "properties": [{
+                "id": "label",
+                "type": "label",
+                "values": list(map(str, seg_ids))
+            }]
+        },
+    }
+    print(info)
+    property_dir = os.path.join(root_dir, "segment_properties")
+    mkdir(property_dir)
+    write_json(os.path.join(property_dir, "info"), info)
 
 
 def read_json(path):
