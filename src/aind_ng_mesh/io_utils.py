@@ -104,7 +104,7 @@ def write_to_s3(
         access_id=access_id,
         secret_access_key=access_key,
     )
-    # shutil.rmtree(upload_dir)
+    shutil.rmtree(upload_dir)
 
 
 def to_s3(
