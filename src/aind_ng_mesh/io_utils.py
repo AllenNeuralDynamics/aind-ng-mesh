@@ -1,4 +1,6 @@
 """
+Read and write routines
+
 Created on Mon June 19 12:00:00 2023
 
 @author: Anna Grim
@@ -70,7 +72,8 @@ def write_to_s3(
     labels : numpy.array
         Segmentation.
     meshes : dict
-        Dictionary of meshes where the keys are object ids and values are meshes.
+        Dictionary of meshes where the keys are object ids and values are
+        meshes.
     root_dir : str
         Directory where files will be written to inorder to write to s3. This
         directory is deleted after the files are uploaded.
@@ -84,16 +87,10 @@ def write_to_s3(
     None
 
     """
-    # Create temp directory for uploading
-    upload_dir = os.path.join(root_dir, "upload_dir")
-    mesh_dir = os.path.join(upload_dir, "mesh")
-    mkdir(upload_dir)
-
-    # Store labels and meshes
+    # Write labels and meshes to local machine
     print("Converting to precomputed format...")
-    to_precomputed(upload_dir, labels)
-    obj_ids = meshing.save_mesh(meshes, mesh_dir)
-    write_segment_properties(upload_dir, obj_ids)
+    upload_dir = os.path.join(root_dir, "upload_dir")
+    write_to_local(labels, meshes, upload_dir)
 
     # Write to s3
     print("Writing to s3 bucket...")
@@ -107,11 +104,60 @@ def write_to_s3(
     shutil.rmtree(upload_dir)
 
 
+def write_to_local(labels, meshes, root_dir):
+    """
+    Writes labels and meshes as precomputed to subdirectory in "root_dir".
+
+    Parameters
+    ----------
+    labels : numpy.array
+        Segmentation.
+    meshes : dict
+        Dictionary of meshes where the keys are object ids and values are
+        meshes.
+    root_dir : str
+        Directory where "labels" and "meshes" are written to.
+
+    Returns
+    -------
+    None
+
+    """
+    # Initialize directories
+    mesh_dir = os.path.join(root_dir, "mesh")
+    mkdir(root_dir)
+    mkdir(mesh_dir)
+
+    # Write
+    write_precomputed(labels, root_dir)
+    obj_ids = meshing.save_mesh(meshes, mesh_dir)
+    write_segment_properties(root_dir, obj_ids)
+
+
 def to_s3(
     directory_path, bucket, s3_prefix, access_id=None, secret_access_key=None
 ):
     """
     Uploads a directory to an s3 bucket.
+
+    Parameters
+    ----------
+    directory_path : str
+        Path on to directory on local machine to be uploaded.
+    bucket : str
+        Name of s3 bucket that data in "directory_path" is written to.
+    s3_prefix : str
+        Path in "bucket" that data is written to.
+    access_id : str, optional
+        AWS access_id that is part of AWS credentials. This value is only
+        required if the bucket is private. The default value is None.
+    secret_access_key : str, optional
+        AWS secret_access_key that is part of AWS credentials. This value is
+        only required if the bucket is private. The default value is None.
+
+    Returns
+    -------
+    None
 
     """
     # Create session
@@ -139,7 +185,22 @@ def to_s3(
             s3_client.put_object(Body="", Bucket=bucket, Key=s3_dir_key)
 
 
-def to_precomputed(path, block):
+def write_precomputed(block, path):
+    """
+    Writes block as precomputed.
+
+    Parameters
+    ----------
+    block : numpy.array
+        Block to be written as precomputed.
+    path : str
+        Path where block is to be written to.
+
+    Returns
+    -------
+    None
+
+    """
     spec = {
         "dtype": "uint16",
         "driver": "neuroglancer_precomputed",
@@ -188,19 +249,34 @@ def edit_info(precomputed_dir):
 
 
 def write_segment_properties(root_dir, seg_ids):
-    """ """
+    """
+    Writes info file that is used to upload meshes into neuroglancer.
+
+    Parameters
+    ----------
+    root_dir : str
+        Path that info file is written to.
+    seg_ids : List[str]
+        List of segmentation ids.
+
+    Returns
+    -------
+    None
+
+    """
     info = {
         "@type": "neuroglancer_segment_properties",
         "inline": {
             "ids": list(map(str, seg_ids)),
-            "properties": [{
-                "id": "label",
-                "type": "label",
-                "values": list(map(str, seg_ids))
-            }]
+            "properties": [
+                {
+                    "id": "label",
+                    "type": "label",
+                    "values": list(map(str, seg_ids)),
+                }
+            ],
         },
     }
-    print(info)
     property_dir = os.path.join(root_dir, "segment_properties")
     mkdir(property_dir)
     write_json(os.path.join(property_dir, "info"), info)
