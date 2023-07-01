@@ -10,6 +10,7 @@ Created on Mon June 19 12:00:00 2023
 import aind_ng_mesh.meshing as meshing
 import boto3
 import json
+import numpy as np
 import os
 import shutil
 import tensorstore as ts
@@ -88,7 +89,6 @@ def write_to_s3(
 
     """
     # Write labels and meshes to local machine
-    print("Converting to precomputed format...")
     upload_dir = os.path.join(root_dir, "upload_dir")
     write_to_local(labels, meshes, upload_dir)
 
@@ -212,15 +212,11 @@ def write_precomputed(block, path):
         "delete_existing": True,
     }
     shape = block.shape + (1,)
-    dataset = (
-        ts.open(
-            spec,
-            dtype=ts.uint16,
-            shape=shape,
-        )
-        .result()
-        .T
-    )
+    dataset = ts.open(
+        spec,
+        dtype=ts.uint16,
+        shape=shape,
+    ).result().T
     write_future = dataset.write(block)
     edit_info(path)
 
